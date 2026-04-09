@@ -2,8 +2,13 @@
 .vs/
 *.suo
 *.user
+*.rsuser
 *.userosscache
 *.sln.docstates
+
+# JetBrains Rider
+.idea/
+*.sln.iml
 
 # Build results
 [Bb]in/
@@ -14,12 +19,16 @@
 [Xx]86/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
+out/
+publish/
+artifacts/
 
 # .NET test and coverage artifacts
 TestResults/
 *.trx
 *.coverage
 *.coveragexml
+[Bb]enchmark[Dd]ot[Nn]et.Artifacts/
 
 # ASP.NET / web tooling
 wwwroot/lib/
@@ -39,8 +48,22 @@ Desktop.ini
 
 # NuGet
 *.nupkg
+*.snupkg
 packages/
 !packages/build/
+.nuget/
 
 # Logs
 *.log
+logs/
+
+# Local SQLite data
+CamCorder.WebApp/App_Data/*.db
+CamCorder.WebApp/App_Data/*.db-shm
+CamCorder.WebApp/App_Data/*.db-wal
+CamCorder.WebApp/App_Data/*.sqlite
+CamCorder.WebApp/App_Data/*.sqlite-shm
+CamCorder.WebApp/App_Data/*.sqlite-wal
+/CamCorder.WebApp/App_Data/hangfire.db
+/CamCorder.WebApp/App_Data/hangfire.db-shm
+/CamCorder.WebApp/App_Data/hangfire.db-wal

@@ -1,6 +1,8 @@
+using CamCorder.Data;
 using CamCorder.WebApp;
 using Hangfire;
 using Hangfire.Storage.SQLite;
+using Microsoft.EntityFrameworkCore;
 using NLog;
 using NLog.Web;
 
@@ -32,6 +34,15 @@ try
         using var _ = File.Create(sqliteDbPath);
     }
 
+    var appDataDirectory = Path.Combine(builder.Environment.ContentRootPath, "App_Data");
+    Directory.CreateDirectory(appDataDirectory);
+
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? $"Data Source={Path.Combine(appDataDirectory, "camcorder.db")}";
+
+    builder.Services.AddDbContext<CamCorderContext>(options =>
+        options.UseSqlite(connectionString));
+
     builder.Services.AddHangfire(configuration =>
     {
         configuration
@@ -46,6 +57,12 @@ try
     });
 
     var app = builder.Build();
+
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<CamCorderContext>();
+        dbContext.Database.Migrate();
+    }
 
     // Configure the HTTP request pipeline.
     if (!app.Environment.IsDevelopment())
