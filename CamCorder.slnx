@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="CamCorder.Business/CamCorder.Business.csproj" />
+  <Project Path="CamCorder.Data/CamCorder.Data.csproj" />
+  <Project Path="CamCorder.WebApp/CamCorder.WebApp.csproj" />
+  <Project Path="Camerra.Common/CamCorder.Common.csproj" />
+</Solution>
