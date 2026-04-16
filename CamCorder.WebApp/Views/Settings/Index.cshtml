@@ -1,0 +1,70 @@
+@model CamCorder.WebApp.Options.CamCorderOptions
+
+@{
+    ViewData["Title"] = "Settings";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-1">CamCorder settings</h1>
+                <p class="text-body-secondary mb-0">These values are stored in the <code>CamCorder</code> appsettings section.</p>
+            </div>
+        </div>
+
+        @if (TempData["StatusMessage"] is string statusMessage)
+        {
+            <div class="alert alert-success" role="alert">
+                @statusMessage
+            </div>
+        }
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form asp-action="Index" method="post" novalidate>
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="RecordingsPath" class="form-label"></label>
+                        <input asp-for="RecordingsPath" class="form-control" />
+                        <span asp-validation-for="RecordingsPath" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="PollingIntervalSeconds" class="form-label"></label>
+                        <input asp-for="PollingIntervalSeconds" class="form-control" type="number" min="1" step="1" />
+                        <div class="form-text">Enter the polling interval in seconds.</div>
+                        <span asp-validation-for="PollingIntervalSeconds" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input asp-for="DownloadEnabled" class="form-check-input" />
+                        <label asp-for="DownloadEnabled" class="form-check-label"></label>
+                        <span asp-validation-for="DownloadEnabled" class="text-danger d-block"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="MaxConcurrentRecordings" class="form-label"></label>
+                        <input asp-for="MaxConcurrentRecordings" class="form-control" />
+                        <span asp-validation-for="MaxConcurrentRecordings" class="text-danger"></span>
+                    </div>
+
+                    <h2 class="h5 mb-3">Chaturbate settings</h2>
+
+                    <div class="mb-4">
+                        <label asp-for="ChaturbateSettings.MaxConcurrentRequests" class="form-label"></label>
+                        <input asp-for="ChaturbateSettings.MaxConcurrentRequests" class="form-control" type="number" min="1" step="1" />
+                        <span asp-validation-for="ChaturbateSettings.MaxConcurrentRequests" class="text-danger"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Save settings</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

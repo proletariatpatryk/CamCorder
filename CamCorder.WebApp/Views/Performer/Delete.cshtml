@@ -1,0 +1,16 @@
+@model CamCorder.Business.Models.PerformerDTO
+@{
+    ViewData["Title"] = "Delete Performer";
+}
+
+<h1>Delete Performer</h1>
+
+<div class="alert alert-danger">
+    Are you sure you want to delete performer "@Model.Name"?
+</div>
+
+<form asp-action="Delete" method="post">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a asp-action="Index" class="btn btn-link">Cancel</a>
+</form>

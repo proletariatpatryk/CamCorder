@@ -1,5 +1,8 @@
 using CamCorder.Data;
+using CamCorder.Business.Services;
+using CamCorder.WebApp.Options;
 using CamCorder.WebApp;
+using CamCorder.WebApp.Hubs;
 using Hangfire;
 using Hangfire.Storage.SQLite;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +23,11 @@ try
 
     // Add services to the container.
     builder.Services.AddControllersWithViews();
+    // SignalR for real-time performer updates
+    builder.Services.AddSignalR();
+    builder.Services.AddOptions<CamCorderOptions>()
+        .Bind(builder.Configuration.GetSection(CamCorderOptions.SectionName))
+        .ValidateDataAnnotations();
 
     var sqliteDbPath = Path.Combine(builder.Environment.ContentRootPath, "App_Data", "hangfire.db");
     var sqliteDbDirectory = Path.GetDirectoryName(sqliteDbPath);
@@ -42,6 +50,11 @@ try
 
     builder.Services.AddDbContext<CamCorderContext>(options =>
         options.UseSqlite(connectionString));
+
+    // Application services
+    builder.Services.AddScoped<IPerformerService, PerformerService>();
+    // Notifier that uses SignalR to broadcast performer updates
+    builder.Services.AddSingleton<IPerformerNotifier, CamCorder.WebApp.Services.PerformerNotifier>();
 
     builder.Services.AddHangfire(configuration =>
     {
@@ -83,6 +96,8 @@ try
         name: "default",
         pattern: "{controller=Home}/{action=Index}/{id?}")
         .WithStaticAssets();
+    // SignalR hub endpoint for performer updates
+    app.MapHub<PerformerHub>("/hubs/performer");
     app.UseHangfireDashboard("/hangfire", new DashboardOptions
     {
         Authorization = [new DashboardNoAuthorizationFilter()]

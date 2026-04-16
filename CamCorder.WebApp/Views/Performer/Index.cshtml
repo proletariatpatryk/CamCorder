@@ -1,0 +1,22 @@
+﻿@{
+    ViewData["Title"] = "Performers";
+}
+
+<h1>Performers</h1>
+
+<table class="table table-striped" id="performers-table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Url</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+@section Scripts {
+    <script src="~/lib/signalr/dist/signalr.min.js"></script>
+    <script src="~/js/performers.js" asp-append-version="true"></script>
+}
+

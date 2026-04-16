@@ -43,6 +43,13 @@
         "font/fonts/bootstrap-icons.woff",
         "font/fonts/bootstrap-icons.woff2"
       ]
+    },
+    {
+      "library": "microsoft-signalr@9.0.6",
+      "destination": "wwwroot/lib/signalr/dist/",
+      "files": [
+        "signalr.min.js"
+      ]
     }
   ]
 }
