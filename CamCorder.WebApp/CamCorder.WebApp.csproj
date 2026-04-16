@@ -42,6 +42,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Camerra.Common\CamCorder.Common.csproj" />
     <ProjectReference Include="..\CamCorder.Data\CamCorder.Data.csproj" />
   </ItemGroup>
 

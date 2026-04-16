@@ -1,7 +1,6 @@
 using CamCorder.Data;
 using CamCorder.WebApp;
 using Hangfire;
-using Hangfire.Storage.SQLite;
 using Microsoft.EntityFrameworkCore;
 using NLog;
 using NLog.Web;
@@ -21,40 +20,7 @@ try
     // Add services to the container.
     builder.Services.AddControllersWithViews();
 
-    var sqliteDbPath = Path.Combine(builder.Environment.ContentRootPath, "App_Data", "hangfire.db");
-    var sqliteDbDirectory = Path.GetDirectoryName(sqliteDbPath);
-
-    if (!string.IsNullOrWhiteSpace(sqliteDbDirectory))
-    {
-        Directory.CreateDirectory(sqliteDbDirectory);
-    }
-
-    if (!File.Exists(sqliteDbPath))
-    {
-        using var _ = File.Create(sqliteDbPath);
-    }
-
-    var appDataDirectory = Path.Combine(builder.Environment.ContentRootPath, "App_Data");
-    Directory.CreateDirectory(appDataDirectory);
-
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-        ?? $"Data Source={Path.Combine(appDataDirectory, "camcorder.db")}";
-
-    builder.Services.AddDbContext<CamCorderContext>(options =>
-        options.UseSqlite(connectionString));
-
-    builder.Services.AddHangfire(configuration =>
-    {
-        configuration
-            .UseSimpleAssemblyNameTypeSerializer()
-            .UseRecommendedSerializerSettings()
-            .UseSQLiteStorage(sqliteDbPath, new SQLiteStorageOptions());
-    });
-
-    builder.Services.AddHangfireServer(options =>
-    {
-        options.SchedulePollingInterval = TimeSpan.FromSeconds(1);
-    });
+    builder.Services.AddCamCorderDependencies(builder.Configuration, builder.Environment);
 
     var app = builder.Build();
 
