@@ -1,10 +1,12 @@
 using CamCorder.Business.Models;
 using CamCorder.Business.Services;
+using CamCorder.Common;
 using CamCorder.WebApp.Hubs;
 using Microsoft.AspNetCore.SignalR;
 
 namespace CamCorder.WebApp.Services
 {
+    [Injectable(typeof(IPerformerNotifier), ServiceLifetime.Singleton)]
     public class PerformerNotifier(IHubContext<PerformerHub> hubContext) : IPerformerNotifier
     {
         private readonly IHubContext<PerformerHub> _hubContext = hubContext;

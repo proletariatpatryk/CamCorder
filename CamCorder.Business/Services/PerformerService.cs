@@ -1,11 +1,14 @@
 ﻿using CamCorder.Business.Models;
+using CamCorder.Common;
 using CamCorder.Data;
 using CamCorder.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace CamCorder.Business.Services
 {
+    [Injectable(typeof(IPerformerService), ServiceLifetime.Scoped)]
     public class PerformerService(CamCorderContext context, ILogger<IPerformerService> logger, IPerformerNotifier? notifier = null) : IPerformerService
     {
         private readonly ILogger<IPerformerService> _logger = logger;
@@ -21,7 +24,10 @@ namespace CamCorder.Business.Services
         public async Task<PerformerDTO?> GetPerformerByIdAsync(int id)
         {
             var performer = await _context.Performers.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
-            if (performer == null) return null;
+
+            if (performer == null) 
+                return null;
+
             return ToDto(performer);
         }
 
@@ -37,7 +43,10 @@ namespace CamCorder.Business.Services
             await _context.SaveChangesAsync();
 
             performer.Id = entity.Id;
-            _logger.LogInformation("Created performer {Id} - {Name}", entity.Id, entity.Name);
+
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("Created performer {Id} - {Name}", entity.Id, entity.Name);
+
             try
             {
                 if (_notifier != null)
@@ -45,7 +54,7 @@ namespace CamCorder.Business.Services
                     await _notifier.PerformerCreatedAsync(performer);
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to notify about performer creation {Id}", performer.Id);
             }
@@ -66,7 +75,11 @@ namespace CamCorder.Business.Services
 
             _context.Performers.Update(entity);
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Updated performer {Id}", performer.Id);
+
+            if(_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("Updated performer {Id}", performer.Id);
+            
+            
             // Notify interested parties that a performer was updated
             try
             {
@@ -75,7 +88,7 @@ namespace CamCorder.Business.Services
                     await _notifier.PerformerUpdatedAsync(ToDto(entity));
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to notify about performer update {Id}", performer.Id);
             }
@@ -93,7 +106,10 @@ namespace CamCorder.Business.Services
 
             _context.Performers.Remove(entity);
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Deleted performer {Id}", id);
+
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("Deleted performer {Id}", id);
+
             try
             {
                 if (_notifier != null)
@@ -101,7 +117,7 @@ namespace CamCorder.Business.Services
                     await _notifier.PerformerDeletedAsync(id);
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to notify about performer deletion {Id}", id);
             }

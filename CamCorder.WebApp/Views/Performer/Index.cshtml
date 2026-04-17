@@ -4,6 +4,14 @@
 
 <h1>Performers</h1>
 
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+<meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
+
+<div class="input-group mb-3">
+    <input id="performer-url-input" type="url" class="form-control" placeholder="Enter performer URL (or username)" aria-label="Performer URL" />
+    <button id="performer-add-btn" class="btn btn-primary" type="button">Add</button>
+</div>
+
 <table class="table table-striped" id="performers-table">
     <thead>
         <tr>
@@ -16,7 +24,9 @@
 </table>
 
 @section Scripts {
+    <link rel="stylesheet" href="~/lib/sweetalert2/dist/sweetalert2.min.css" />
     <script src="~/lib/signalr/dist/signalr.min.js"></script>
+    <script src="~/lib/sweetalert2/dist/sweetalert2.all.min.js"></script>
     <script src="~/js/performers.js" asp-append-version="true"></script>
 }
 

@@ -50,6 +50,14 @@
       "files": [
         "signalr.min.js"
       ]
+    },
+    {
+      "library": "sweetalert2@11.23.0",
+      "destination": "wwwroot/lib/sweetalert2/dist/",
+      "files": [
+        "sweetalert2.all.min.js",
+          "sweetalert2.min.css"
+      ]
     }
   ]
 }

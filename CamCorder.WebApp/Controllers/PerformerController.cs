@@ -6,14 +6,9 @@ using System.Threading.Tasks;
 
 namespace CamCorder.WebApp.Controllers
 {
-    public class PerformerController : Controller
+    public class PerformerController(IPerformerService performerService) : Controller
     {
-        private readonly IPerformerService _performerService;
-
-        public PerformerController(IPerformerService performerService)
-        {
-            _performerService = performerService;
-        }
+        private readonly IPerformerService _performerService = performerService;
 
         public IActionResult Index()
         {
@@ -36,8 +31,22 @@ namespace CamCorder.WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(PerformerDTO model)
         {
-            if (!ModelState.IsValid) return View(model);
-            await _performerService.CreatePerformerAsync(model);
+            if (!ModelState.IsValid)
+            {
+                if (Request.Headers.XRequestedWith == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json"))
+                {
+                    return BadRequest(ModelState);
+                }
+                return View(model);
+            }
+
+            var created = await _performerService.CreatePerformerAsync(model);
+
+            if (Request.Headers.XRequestedWith == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json"))
+            {
+                return Json(new { success = true, performer = created });
+            }
+
             return RedirectToAction(nameof(Index));
         }
 

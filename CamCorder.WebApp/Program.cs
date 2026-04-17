@@ -1,8 +1,7 @@
 using CamCorder.Data;
-using CamCorder.Business.Services;
-using CamCorder.WebApp.Options;
 using CamCorder.WebApp;
 using CamCorder.WebApp.Hubs;
+using CamCorder.WebApp.Options;
 using Hangfire;
 using Hangfire.Storage.SQLite;
 using Microsoft.EntityFrameworkCore;
@@ -17,14 +16,12 @@ try
 {
     var builder = WebApplication.CreateBuilder(args);
 
-    // Add NLog to ASP.NET Core
     builder.Logging.ClearProviders();
     builder.Host.UseNLog();
 
-    // Add services to the container.
     builder.Services.AddControllersWithViews();
-    // SignalR for real-time performer updates
     builder.Services.AddSignalR();
+
     builder.Services.AddOptions<CamCorderOptions>()
         .Bind(builder.Configuration.GetSection(CamCorderOptions.SectionName))
         .ValidateDataAnnotations();
@@ -51,10 +48,11 @@ try
     builder.Services.AddDbContext<CamCorderContext>(options =>
         options.UseSqlite(connectionString));
 
-    // Application services
-    builder.Services.AddScoped<IPerformerService, PerformerService>();
-    // Notifier that uses SignalR to broadcast performer updates
-    builder.Services.AddSingleton<IPerformerNotifier, CamCorder.WebApp.Services.PerformerNotifier>();
+    // Application services via Scrutor + [Injectable]
+    builder.Services.AddInjectables(
+        typeof(Program).Assembly,
+        typeof(CamCorder.Business.Services.IPerformerService).Assembly
+    );
 
     builder.Services.AddHangfire(configuration =>
     {
@@ -77,17 +75,14 @@ try
         dbContext.Database.Migrate();
     }
 
-    // Configure the HTTP request pipeline.
     if (!app.Environment.IsDevelopment())
     {
         app.UseExceptionHandler("/Home/Error");
-        // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
         app.UseHsts();
     }
 
     app.UseHttpsRedirection();
     app.UseRouting();
-
     app.UseAuthorization();
 
     app.MapStaticAssets();
@@ -96,12 +91,14 @@ try
         name: "default",
         pattern: "{controller=Home}/{action=Index}/{id?}")
         .WithStaticAssets();
-    // SignalR hub endpoint for performer updates
+
     app.MapHub<PerformerHub>("/hubs/performer");
+
     app.UseHangfireDashboard("/hangfire", new DashboardOptions
     {
         Authorization = [new DashboardNoAuthorizationFilter()]
     });
+
     app.Run();
 }
 catch (Exception exception)

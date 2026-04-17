@@ -79,8 +79,33 @@
                 }
             }
         } else {
-            // new performer, append to table
-            tableBody.appendChild(createRow(p));
+            // new performer, but guard against duplicates by URL or name
+            const url = p.url ?? p.Url ?? '';
+            // try to find an existing row by url
+            let foundByUrl = null;
+            if (url) {
+                const anchor = tableBody.querySelector(`td[data-prop="url"] a[href="${url}"]`);
+                if (anchor) foundByUrl = anchor.closest('tr');
+            }
+
+            if (foundByUrl) {
+                // update the existing row's dataset id and cells
+                foundByUrl.dataset.id = id;
+                const nameCell = foundByUrl.querySelector('td[data-prop="name"]');
+                if (nameCell) nameCell.textContent = p.name ?? p.Name ?? '';
+                const urlCell = foundByUrl.querySelector('td[data-prop="url"]');
+                if (urlCell) {
+                    const anchor = urlCell.querySelector('a');
+                    if (anchor) {
+                        anchor.setAttribute('href', url);
+                        anchor.textContent = url;
+                    } else {
+                        urlCell.innerHTML = `<a href="${url}" target="_blank">${url}</a>`;
+                    }
+                }
+            } else {
+                tableBody.appendChild(createRow(p));
+            }
         }
     }
 
@@ -91,11 +116,137 @@
         renderPerformers(performers);
     }
 
+    // Add performer by URL input handling
+    const addInput = document.getElementById('performer-url-input');
+    const addButton = document.getElementById('performer-add-btn');
+
+    function extractUsernameFromUrl(raw) {
+        if (!raw) return '';
+        let s = raw.trim();
+        // remove any query or fragment
+        s = s.split('#')[0].split('?')[0];
+        // remove trailing slash
+        while (s.endsWith('/')) s = s.slice(0, -1);
+        try {
+            // if it's a full URL, use URL to get pathname
+            const u = new URL(s.startsWith('http') ? s : 'https://' + s);
+            const parts = u.pathname.split('/').filter(Boolean);
+            return parts.length ? decodeURIComponent(parts[parts.length - 1]) : u.hostname;
+        } catch (e) {
+            // fallback: take last segment after slash
+            const parts = s.split('/').filter(Boolean);
+            return parts.length ? decodeURIComponent(parts[parts.length - 1]) : s;
+        }
+    }
+
+    async function addPerformerByUrl(url) {
+        if (!url) return;
+        const name = extractUsernameFromUrl(url);
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        const token = meta ? meta.getAttribute('content') : null;
+
+        const form = new FormData();
+        form.append('Name', name);
+        form.append('Url', url);
+        if (token) form.append('__RequestVerificationToken', token);
+
+        try {
+            addButton.disabled = true;
+            const resp = await fetch('/Performer/Create', {
+                method: 'POST',
+                body: form,
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+            // server will notify via SignalR; show toast based on response
+            if (resp.ok) {
+                try {
+                    const json = await resp.json();
+                    if (json && json.success) {
+                        // If the server returned the created performer in JSON, use it
+                        // to update/insert into the table immediately rather than
+                        // relying on SignalR notifications.
+                        if (json.performer) {
+                            try {
+                                updateOrInsertPerformer(json.performer);
+                                const id = String(json.performer.id ?? json.performer.Id ?? '');
+                                if (id) {
+                                    recentlyCreatedIds.add(id);
+                                    // remove the marker after a short window
+                                    setTimeout(() => recentlyCreatedIds.delete(id), 5000);
+                                }
+                            } catch (e) {
+                                console.error('Failed to insert performer from create response', e);
+                            }
+                        }
+                        if (window.Swal) {
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                icon: 'success',
+                                title: 'Performer added',
+                                showConfirmButton: false,
+                                timer: 2500
+                            });
+                        }
+                    } else {
+                        if (window.Swal) {
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                icon: 'error',
+                                title: 'Failed to add performer',
+                                showConfirmButton: false,
+                                timer: 3000
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Create returned non-json response', e);
+                }
+            } else {
+                if (window.Swal) {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'error',
+                        title: 'Failed to add performer',
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+                }
+                console.error('Failed to create performer', resp.status);
+            }
+        } catch (err) {
+            console.error('Error creating performer', err);
+        } finally {
+            addButton.disabled = false;
+            if (addInput) addInput.value = '';
+        }
+    }
+
+    if (addButton && addInput) {
+        addButton.addEventListener('click', () => addPerformerByUrl(addInput.value));
+        addInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addPerformerByUrl(addInput.value);
+            }
+        });
+    }
+
     // Setup SignalR connection
     const connection = new signalR.HubConnectionBuilder()
         .withUrl('/hubs/performer')
         .withAutomaticReconnect()
         .build();
+
+    // track performers we just created from this client so SignalR notifications
+    // originating from the server for the same creation don't cause duplicates
+    const recentlyCreatedIds = new Set();
 
     connection.on('PerformerUpdated', function (performer) {
         // Update only the changed performer row
@@ -104,6 +255,35 @@
         } catch (e) {
             console.error('Failed to apply performer update', e);
             // fallback
+            loadPerformers();
+        }
+    });
+
+    // When a new performer is created elsewhere, SignalR will notify and we insert it
+    connection.on('PerformerCreated', function (performer) {
+        try {
+            const id = String(performer?.id ?? performer?.Id ?? '');
+            if (id && recentlyCreatedIds.has(id)) {
+                // this client already inserted the performer from the Create JSON
+                // response; ignore the server notification to avoid duplicates
+                recentlyCreatedIds.delete(id);
+                return;
+            }
+            updateOrInsertPerformer(performer);
+        } catch (e) {
+            console.error('Failed to apply performer created', e);
+            loadPerformers();
+        }
+    });
+
+    // When a performer is deleted, remove the row
+    connection.on('PerformerDeleted', function (performerId) {
+        try {
+            const id = String(performerId);
+            const existing = tableBody.querySelector(`tr[data-id="${id}"]`);
+            if (existing) existing.remove();
+        } catch (e) {
+            console.error('Failed to apply performer deleted', e);
             loadPerformers();
         }
     });
