@@ -10,7 +10,6 @@ public class CamCorderOptions
     [Display(Name = "Recordings path")]
     public string RecordingsPath { get; set; } = "App_Data/Recordings";
 
-    [Range(1, 86400)]
     [Display(Name = "Polling interval (seconds)")]
     public int PollingIntervalSeconds { get; set; } = 15;
 
